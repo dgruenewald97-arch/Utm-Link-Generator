@@ -147,9 +147,30 @@ h1 { font-size: 1.8rem; font-weight: 700; line-height: 1.1; margin-bottom: 6px; 
 .agroup { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); margin: 20px 0 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
 .reset-bar { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
 .reset-note { font-size: 12px; color: var(--text-faint); flex: 1; }
+/* PASSWORD SCREEN */
+#pw-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+.pw-box { width: 100%; max-width: 360px; padding: 0 24px; }
+.pw-box h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+.pw-box p { font-size: 13px; color: var(--text-light); margin-bottom: 24px; }
+.pw-box input { width: 100%; padding: 11px 12px; font-family: var(--font); font-size: 14px; background: var(--bg-input); border: 1px solid var(--border); color: var(--text); outline: none; border-radius: 0; margin-bottom: 10px; }
+.pw-box input:focus { border-color: var(--accent); }
+.pw-box button { width: 100%; padding: 11px; font-family: var(--font); font-size: 14px; font-weight: 700; background: var(--accent); border: none; color: #fff; cursor: pointer; border-radius: 0; }
+.pw-box button:hover { background: var(--accent-dark); }
+.pw-error { font-size: 12px; color: var(--red); margin-top: 8px; display: none; }
 </style>
 </head>
 <body>
+
+<!-- PASSWORD SCREEN -->
+<div id="pw-screen">
+  <div class="pw-box">
+    <h2>UTM Link Generator</h2>
+    <p>Bitte Passwort eingeben um fortzufahren.</p>
+    <input type="password" id="pw-input" placeholder="Passwort" />
+    <button id="pw-btn">Weiter</button>
+    <div class="pw-error" id="pw-error">Falsches Passwort. Bitte erneut versuchen.</div>
+  </div>
+</div>
 
 <!-- ADMIN VIEW -->
 <div id="admin-view">
@@ -158,7 +179,17 @@ h1 { font-size: 1.8rem; font-weight: 700; line-height: 1.1; margin-bottom: 6px; 
     <h1>Kanal-Konfiguration</h1>
     <button class="admin-back" id="admin-back-btn">&#8592; Zurück zum Generator</button>
   </div>
-  <p style="font-size:13px;color:var(--text-light);margin-bottom:20px;">Hier kannst du für jeden Kanal die verfügbaren Quellen und Medium-Werte anpassen. Änderungen werden sofort gespeichert und im Generator übernommen.</p>
+  <p style="font-size:13px;color:var(--text-light);margin-bottom:20px;">Hier kannst du für jeden Kanal die verfügbaren Quellen und Medium-Werte anpassen. Änderungen werden auf GitHub gespeichert und für alle Nutzer übernommen.</p>
+
+  <div style="background:var(--bg-input);border:1px solid var(--border);padding:14px;margin-bottom:20px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-light);margin-bottom:8px;">GitHub Token</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="password" id="gist-token-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="flex:1;padding:8px 10px;font-family:var(--font);font-size:13px;background:var(--bg);border:1px solid var(--border);color:var(--text);outline:none;border-radius:0;" />
+      <button id="gist-token-btn" class="btn sm pri" style="white-space:nowrap">Token speichern</button>
+    </div>
+    <div style="font-size:11px;color:var(--text-faint);margin-top:6px;">Das Token wird nur in dieser Browser-Session gespeichert — nie im Code. Ohne Token kannst du Änderungen nur lokal speichern.</div>
+    <div id="gist-token-status" style="font-size:11px;margin-top:6px;display:none;"></div>
+  </div>
   <div id="admin-channels"></div>
   <div class="reset-bar">
     <span class="reset-note">Alle Änderungen zurücksetzen und die Standard-Werte wiederherstellen.</span>
@@ -936,33 +967,112 @@ function renderList() {
 
 renderList();
 
-/* ── ADMIN ───────────────────────────────────────────── */
+/* ── PASSWORT ── */
+var PW = 'MM2026';
+var PW_KEY = 'utm_auth';
 
+function checkAuth() {
+  if (sessionStorage.getItem(PW_KEY) === '1') {
+    document.getElementById('pw-screen').style.display = 'none';
+    return true;
+  }
+  return false;
+}
+
+document.getElementById('pw-btn').addEventListener('click', function() {
+  var input = document.getElementById('pw-input').value;
+  if (input === PW) {
+    sessionStorage.setItem(PW_KEY, '1');
+    document.getElementById('pw-screen').style.display = 'none';
+  } else {
+    document.getElementById('pw-error').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+});
+document.getElementById('pw-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('pw-btn').click();
+});
+checkAuth();
+
+/* ── GITHUB GIST CONFIG ─────────────────────────────────
+   Gist speichert die Admin-Einstellungen (Quellen/Mediums).
+   GIST_ID: die ID aus der Gist-URL (github.com/gist/USER/ID)
+   Token wird nur im Admin-Bereich eingegeben — nicht im Code!
+   ────────────────────────────────────────────────────── */
+var GIST_ID       = '0e623156fc0959836fcda96abed5b13f';
+var GIST_FILENAME = 'utm-config.json';
+var GIST_URL      = 'https://api.github.com/gists/' + GIST_ID;
 var STORAGE_KEY_CFG = 'utm_gen_cfg';
 
+function getToken() {
+  return sessionStorage.getItem('utm_gist_token') || '';
+}
+
 function loadCfg() {
+  if (GIST_ID === 'DEINE_GIST_ID_HIER') { loadCfgLocal(); return; }
+  fetch(GIST_URL, {
+    headers: { 'Accept': 'application/vnd.github+json' }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var file = data.files && data.files[GIST_FILENAME];
+    if (file && file.content) {
+      var cfg = JSON.parse(file.content);
+      applyCfg(cfg);
+      try { localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(cfg)); } catch(e) {}
+    }
+  })
+  .catch(function() { loadCfgLocal(); });
+}
+
+function loadCfgLocal() {
   try {
     var saved = localStorage.getItem(STORAGE_KEY_CFG);
-    if (saved) {
-      var cfg = JSON.parse(saved);
-      CH.forEach(function(ch) {
-        if (!ch.key) return;
-        if (cfg[ch.key]) {
-          if (cfg[ch.key].sources) ch.sources = cfg[ch.key].sources;
-          if (cfg[ch.key].mediumOptions) ch.mediumOptions = cfg[ch.key].mediumOptions;
-        }
-      });
-    }
+    if (saved) applyCfg(JSON.parse(saved));
   } catch(e) {}
 }
 
-function saveCfg() {
+function applyCfg(cfg) {
+  if (!cfg) return;
+  CH.forEach(function(ch) {
+    if (!ch.key) return;
+    if (cfg[ch.key]) {
+      if (cfg[ch.key].sources) ch.sources = cfg[ch.key].sources;
+      if (cfg[ch.key].mediumOptions) ch.mediumOptions = cfg[ch.key].mediumOptions;
+    }
+  });
+}
+
+function saveCfg(onSuccess, onError) {
   var cfg = {};
   CH.forEach(function(ch) {
     if (!ch.key) return;
     cfg[ch.key] = { sources: ch.sources, mediumOptions: ch.mediumOptions };
   });
   try { localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(cfg)); } catch(e) {}
+
+  var token = getToken();
+  if (!token || GIST_ID === 'DEINE_GIST_ID_HIER') {
+    if (onSuccess) onSuccess();
+    return;
+  }
+  var files = {};
+  files[GIST_FILENAME] = { content: JSON.stringify(cfg, null, 2) };
+  fetch(GIST_URL, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Accept': 'application/vnd.github+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ files: files })
+  })
+  .then(function(r) {
+    if (r.ok) { if (onSuccess) onSuccess(); }
+    else { if (onError) onError('GitHub Fehler: ' + r.status); }
+  })
+  .catch(function(e) { if (onError) onError(e.message); });
 }
 
 function renderAdmin() {
@@ -1029,7 +1139,8 @@ function renderAdmin() {
       var xCh = CH[xIdx];
       if (xType === 'src') xCh.sources = xCh.sources.filter(function(s) { return s !== xVal; });
       else xCh.mediumOptions = xCh.mediumOptions.filter(function(m) { return m !== xVal; });
-      saveCfg(); renderAdmin();
+      saveCfg(function() {}, function(err) { console.warn('Gist save error:', err); });
+      renderAdmin();
       document.getElementById('body-' + xIdx).classList.add('open');
       document.querySelector('[data-idx="' + xIdx + '"].ch-card-head .toggle').textContent = '\u25b2';
       return;
@@ -1046,7 +1157,8 @@ function renderAdmin() {
       if (aType === 'src' && aCh.sources.indexOf(newVal) === -1) aCh.sources.push(newVal);
       else if (aType === 'med' && aCh.mediumOptions.indexOf(newVal) === -1) aCh.mediumOptions.push(newVal);
       aInput.value = '';
-      saveCfg(); renderAdmin();
+      saveCfg(function() {}, function(err) { console.warn('Gist save error:', err); });
+      renderAdmin();
       document.getElementById('body-' + aIdx).classList.add('open');
       document.querySelector('[data-idx="' + aIdx + '"].ch-card-head .toggle').textContent = '\u25b2';
     }
@@ -1063,8 +1175,40 @@ function renderAdmin() {
 function showAdmin() {
   document.getElementById('generator-view').style.display = 'none';
   document.getElementById('admin-view').style.display = 'block';
+  var saved = getToken();
+  if (saved) document.getElementById('gist-token-input').value = saved;
   renderAdmin();
 }
+
+document.getElementById('gist-token-btn').addEventListener('click', function() {
+  var token = document.getElementById('gist-token-input').value.trim();
+  var status = document.getElementById('gist-token-status');
+  if (!token) {
+    sessionStorage.removeItem('utm_gist_token');
+    status.style.display = 'block';
+    status.style.color = 'var(--text-faint)';
+    status.textContent = 'Token entfernt — Änderungen werden nur lokal gespeichert.';
+    return;
+  }
+  fetch('https://api.github.com/gists/' + GIST_ID, {
+    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json' }
+  }).then(function(r) {
+    status.style.display = 'block';
+    if (r.ok) {
+      sessionStorage.setItem('utm_gist_token', token);
+      status.style.color = 'var(--green)';
+      status.textContent = '\u2713 Token gültig — Änderungen werden auf GitHub gespeichert.';
+    } else {
+      status.style.color = 'var(--red)';
+      status.textContent = '\u2717 Token ungültig (Status ' + r.status + '). Bitte prüfen.';
+    }
+  }).catch(function() {
+    status.style.display = 'block';
+    status.style.color = 'var(--red)';
+    status.textContent = '\u2717 Verbindungsfehler. Token wird trotzdem gespeichert.';
+    sessionStorage.setItem('utm_gist_token', token);
+  });
+});
 function showGenerator() {
   document.getElementById('admin-view').style.display = 'none';
   document.getElementById('generator-view').style.display = 'block';
@@ -1075,7 +1219,18 @@ function showGenerator() {
 document.getElementById('admin-back-btn').addEventListener('click', showGenerator);
 document.getElementById('admin-reset-btn').addEventListener('click', function() {
   localStorage.removeItem(STORAGE_KEY_CFG);
-  location.reload();
+  var files = {};
+  files[GIST_FILENAME] = { content: '{}' };
+  var token = getToken();
+  if (token && GIST_ID !== 'DEINE_GIST_ID_HIER') {
+    fetch(GIST_URL, {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ files: files })
+    }).finally(function() { location.reload(); });
+  } else {
+    location.reload();
+  }
 });
 
 if (window.location.search.indexOf('admin') !== -1) {
