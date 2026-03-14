@@ -839,6 +839,19 @@ document.getElementById('hlist').addEventListener('click', function(e) {
       setTimeout(function() { btn.textContent = '\u29c9'; }, 1200);
     });
  
+  } else if (btn.classList.contains('dup')) {
+    var item = links.find(function(l) { return l.id === id; });
+    if (item) {
+      var copy = JSON.parse(JSON.stringify(item));
+      copy.id = Date.now();
+      copy.date = new Date().toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'});
+      var idx = links.findIndex(function(l) { return l.id === id; });
+      links.splice(idx + 1, 0, copy);
+      save(); renderList();
+      btn.textContent = '\u2713';
+      setTimeout(function() { btn.textContent = '\u29f4'; }, 1200);
+    }
+ 
   } else if (btn.classList.contains('ed')) {
     var item = links.find(function(l) { return l.id === id; });
     if (item) {
@@ -939,6 +952,7 @@ function renderList() {
         '</div>' +
         '<div class="hacts">' +
           '<button class="hbtn cp" data-id="' + item.id + '" title="Kopieren">&#10697;</button>' +
+          '<button class="hbtn dup" data-id="' + item.id + '" title="Duplizieren">&#10021;</button>' +
           '<button class="hbtn ed" data-id="' + item.id + '" title="Bearbeiten">&#9998;</button>' +
           '<button class="hbtn del" data-id="' + item.id + '" title="Löschen">&#10005;</button>' +
         '</div>' +
@@ -1172,3 +1186,4 @@ if (window.location.search.indexOf('admin') !== -1) {
 </script>
 </body>
 </html>
+ 
