@@ -160,6 +160,7 @@ h1 { font-size: 1.8rem; font-weight: 700; line-height: 1.1; margin-bottom: 6px; 
   </div>
   <p style="font-size:13px;color:var(--text-light);margin-bottom:20px;">Hier kannst du für jeden Kanal die verfügbaren Quellen und Medium-Werte anpassen. Änderungen werden auf GitHub gespeichert und für alle Nutzer übernommen.</p>
   <div id="admin-channels"></div>
+  <div id="admin-save-status" style="display:none;font-size:12px;font-weight:600;padding:8px 0;margin-top:4px;"></div>
   <div class="reset-bar">
     <span class="reset-note">Alle Änderungen zurücksetzen und die Standard-Werte wiederherstellen.</span>
     <button class="btn red sm" id="admin-reset-btn">Auf Standard zurücksetzen</button>
@@ -1016,11 +1017,9 @@ function saveCfg(onSuccess, onError) {
 function renderAdmin() {
   var el = document.getElementById('admin-channels');
   var html = '';
-  var currentGroup = '';
   CH.forEach(function(ch, idx) {
     if (ch.group) {
       html += '<div class="agroup">' + ch.group + '</div>';
-      currentGroup = ch.group;
       return;
     }
     html += '<div class="ch-card">' +
@@ -1030,84 +1029,96 @@ function renderAdmin() {
         '<span class="toggle">&#9660;</span>' +
       '</div>' +
       '<div class="ch-card-body" id="body-' + idx + '">' +
-
         '<div class="alabel">Quellen (utm_source)</div>' +
-        '<div class="tag-list" id="src-tags-' + idx + '">' +
+        '<div class="tag-list">' +
           ch.sources.map(function(s) {
             return '<span class="atag">' + s + '<button class="x" data-idx="' + idx + '" data-type="src" data-val="' + s + '">&#10005;</button></span>';
           }).join('') +
         '</div>' +
         '<div class="add-row">' +
           '<input type="text" id="src-input-' + idx + '" placeholder="Neue Quelle hinzufügen..." />' +
-          '<button data-idx="' + idx + '" data-type="src">+ Hinzufügen</button>' +
+          '<button class="add-val" data-idx="' + idx + '" data-type="src">+ Hinzufügen</button>' +
         '</div>' +
         '<div class="admin-note">Alle Werte die im Dropdown "' + (ch.sourceLabel || 'Quelle') + '" erscheinen sollen.</div>' +
-
         '<div class="alabel" style="margin-top:16px">Medium-Optionen (utm_medium)</div>' +
-        '<div class="tag-list" id="med-tags-' + idx + '">' +
+        '<div class="tag-list">' +
           ch.mediumOptions.map(function(m) {
             return '<span class="atag">' + m + '<button class="x" data-idx="' + idx + '" data-type="med" data-val="' + m + '">&#10005;</button></span>';
           }).join('') +
         '</div>' +
         '<div class="add-row">' +
           '<input type="text" id="med-input-' + idx + '" placeholder="Neuen Medium-Wert hinzufügen..." />' +
-          '<button data-idx="' + idx + '" data-type="med">+ Hinzufügen</button>' +
+          '<button class="add-val" data-idx="' + idx + '" data-type="med">+ Hinzufügen</button>' +
         '</div>' +
         '<div class="admin-note">Achtung: Nur GA4-kompatible Werte verwenden. Falsche Werte landen in "Unassigned".</div>' +
-
       '</div>' +
     '</div>';
   });
   el.innerHTML = html;
+}
 
-  el.addEventListener('click', function(e) {
-    var head = e.target.closest('.ch-card-head');
-    if (head) {
-      var headIdx = head.dataset.idx;
-      var body = document.getElementById('body-' + headIdx);
-      body.classList.toggle('open');
-      head.querySelector('.toggle').textContent = body.classList.contains('open') ? '\u25b2' : '\u25bc';
-      return;
-    }
-    var xbtn = e.target.closest('.x');
-    if (xbtn) {
-      var xIdx = parseInt(xbtn.dataset.idx);
-      var xType = xbtn.dataset.type;
-      var xVal = xbtn.dataset.val;
-      var xCh = CH[xIdx];
-      if (xType === 'src') xCh.sources = xCh.sources.filter(function(s) { return s !== xVal; });
-      else xCh.mediumOptions = xCh.mediumOptions.filter(function(m) { return m !== xVal; });
-      saveCfg(function() {}, function(err) { console.warn('Gist save error:', err); });
-      renderAdmin();
-      document.getElementById('body-' + xIdx).classList.add('open');
-      document.querySelector('[data-idx="' + xIdx + '"].ch-card-head .toggle').textContent = '\u25b2';
-      return;
-    }
-    var addBtn = e.target.closest('.add-row button');
-    if (addBtn) {
-      var aIdx = parseInt(addBtn.dataset.idx);
-      var aType = addBtn.dataset.type;
-      var inputId = (aType === 'src' ? 'src-input-' : 'med-input-') + aIdx;
-      var aInput = document.getElementById(inputId);
-      var newVal = aInput.value.trim().toLowerCase().replace(/\s+/g,'_');
-      if (!newVal) return;
-      var aCh = CH[aIdx];
-      if (aType === 'src' && aCh.sources.indexOf(newVal) === -1) aCh.sources.push(newVal);
-      else if (aType === 'med' && aCh.mediumOptions.indexOf(newVal) === -1) aCh.mediumOptions.push(newVal);
-      aInput.value = '';
-      saveCfg(function() {}, function(err) { console.warn('Gist save error:', err); });
-      renderAdmin();
-      document.getElementById('body-' + aIdx).classList.add('open');
-      document.querySelector('[data-idx="' + aIdx + '"].ch-card-head .toggle').textContent = '\u25b2';
-    }
-  });
+/* Admin event delegation — einmalig, nicht in renderAdmin */
+document.getElementById('admin-channels').addEventListener('click', function(e) {
+  var head = e.target.closest('.ch-card-head');
+  if (head) {
+    var headIdx = head.dataset.idx;
+    var body = document.getElementById('body-' + headIdx);
+    body.classList.toggle('open');
+    head.querySelector('.toggle').textContent = body.classList.contains('open') ? '\u25b2' : '\u25bc';
+    return;
+  }
+  var xbtn = e.target.closest('.x');
+  if (xbtn) {
+    var xIdx = parseInt(xbtn.dataset.idx);
+    var xType = xbtn.dataset.type;
+    var xVal = xbtn.dataset.val;
+    var xCh = CH[xIdx];
+    if (xType === 'src') xCh.sources = xCh.sources.filter(function(s) { return s !== xVal; });
+    else xCh.mediumOptions = xCh.mediumOptions.filter(function(m) { return m !== xVal; });
+    saveCfg(
+      function() { showSaveStatus('&#10003; Gespeichert', '#2D9E5F'); },
+      function(err) { showSaveStatus('&#10007; Fehler: ' + err, '#C0392B'); }
+    );
+    renderAdmin();
+    document.getElementById('body-' + xIdx).classList.add('open');
+    document.querySelector('[data-idx="' + xIdx + '"].ch-card-head .toggle').textContent = '\u25b2';
+    return;
+  }
+  var addBtn = e.target.closest('.add-val');
+  if (addBtn) {
+    var aIdx = parseInt(addBtn.dataset.idx);
+    var aType = addBtn.dataset.type;
+    var aInput = document.getElementById((aType === 'src' ? 'src-input-' : 'med-input-') + aIdx);
+    var newVal = aInput.value.trim().toLowerCase().replace(/\s+/g,'_');
+    if (!newVal) return;
+    var aCh = CH[aIdx];
+    if (aType === 'src' && aCh.sources.indexOf(newVal) === -1) aCh.sources.push(newVal);
+    else if (aType === 'med' && aCh.mediumOptions.indexOf(newVal) === -1) aCh.mediumOptions.push(newVal);
+    aInput.value = '';
+    saveCfg(
+      function() { showSaveStatus('&#10003; Gespeichert', '#2D9E5F'); },
+      function(err) { showSaveStatus('&#10007; Fehler: ' + err, '#C0392B'); }
+    );
+    renderAdmin();
+    document.getElementById('body-' + aIdx).classList.add('open');
+    document.querySelector('[data-idx="' + aIdx + '"].ch-card-head .toggle').textContent = '\u25b2';
+  }
+});
 
-  el.addEventListener('keydown', function(e) {
-    if (e.key !== 'Enter') return;
-    var kInput = e.target.closest('.add-row input');
-    if (!kInput) return;
-    kInput.closest('.add-row').querySelector('button').click();
-  });
+document.getElementById('admin-channels').addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  var kInput = e.target.closest('.add-row input');
+  if (!kInput) return;
+  kInput.closest('.add-row').querySelector('.add-val').click();
+});
+
+function showSaveStatus(msg, color) {
+  var bar = document.getElementById('admin-save-status');
+  if (!bar) return;
+  bar.innerHTML = msg;
+  bar.style.color = color;
+  bar.style.display = 'block';
+  setTimeout(function() { bar.style.display = 'none'; }, 3000);
 }
 
 function showAdmin() {
