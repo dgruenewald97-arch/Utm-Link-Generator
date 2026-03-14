@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UTM Link Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --font: 'Libre Franklin', Arial, sans-serif;
+  --text:        #363636;
+  --text-light:  #7A7A7A;
+  --text-faint:  #AAAAAA;
+  --border:      #E0E0E0;
+  --bg:          #FFFFFF;
+  --bg-input:    #F0F0F0;
+  --bg-hover:    #F7F7F7;
+  --accent:      #009BD9;
+  --accent-dark: #007EB2;
+  --green:       #2D9E5F;
+  --green-bg:    #EAF6ED;
+  --orange:      #E8900A;
+  --orange-bg:   #FFF4E5;
+  --red:         #C0392B;
+}
+body { font-family: var(--font); font-size: 14px; color: var(--text); background: var(--bg); padding: 32px 24px 48px; max-width: 780px; margin: 0 auto; }
+
+h1 { font-size: 1.8rem; font-weight: 700; line-height: 1.1; margin-bottom: 6px; color: var(--text); }
+.subtitle { font-size: 14px; color: var(--text-light); margin-bottom: 28px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+
+.sec { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-light); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+/* PILLS */
+.pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.pill { padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1.5px solid transparent; transition: all 150ms; border-radius: 2px; font-family: var(--font); user-select: none; }
+.pill:hover { opacity: 0.85; }
+.pill.active { outline: 2px solid var(--text); outline-offset: 2px; }
+.pill-wrap { display: inline-flex; align-items: center; gap: 4px; }
+
+/* INFO TOOLTIP */
+.iw { position: relative; display: inline-flex; align-items: center; }
+.ibtn { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid var(--text-faint); background: transparent; color: var(--text-faint); font-size: 9px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; font-family: var(--font); flex-shrink: 0; transition: all 150ms; }
+.ibtn:hover { border-color: var(--accent); color: var(--accent); }
+.tip { display: none; position: absolute; left: 20px; top: -4px; width: 220px; background: var(--bg); border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 8px 10px; font-size: 12px; color: var(--text-light); line-height: 1.5; z-index: 100; border-radius: 2px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.iw.open .tip { display: block; }
+
+/* FORM */
+.field { margin-bottom: 14px; }
+.flabel { display: flex; align-items: center; gap: 5px; margin-bottom: 6px; }
+.flabel span { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-light); }
+.req { color: var(--accent); }
+.field select,
+.field input[type="text"] {
+  width: 100%; padding: 10px 12px;
+  font-family: var(--font); font-size: 14px;
+  background: var(--bg-input); border: 1px solid var(--border);
+  color: var(--text); outline: none; appearance: none;
+  border-radius: 0; transition: border-color 150ms;
+}
+.field select:focus, .field input[type="text"]:focus { border-color: var(--accent); }
+.field input[type="text"]::placeholder { color: var(--text-faint); }
+.field input[readonly] { color: var(--accent); font-weight: 600; cursor: default; }
+.field .hint { font-size: 11px; color: var(--text-faint); margin-top: 4px; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* OUTPUT */
+.outbox { border: 1px solid var(--border); background: var(--bg-input); padding: 14px; margin-top: 4px; }
+.outlabel { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-light); margin-bottom: 8px; }
+.urlline { font-family: monospace; font-size: 12px; word-break: break-all; line-height: 1.8; color: var(--text-light); }
+.urlline .base { color: var(--text); }
+.urlline .p1 { color: #185FA5; }
+.urlline .p2 { color: #009BD9; }
+.urlline .p3 { color: #C47000; }
+.urlline .p4 { color: #993556; }
+.urlline .p5 { color: #3B6D11; }
+.sok  { background: var(--green-bg);  border-left: 3px solid var(--green);  padding: 8px 12px; font-size: 12px; color: #1A6B3A; margin-top: 10px; font-weight: 500; }
+.swarn { background: var(--orange-bg); border-left: 3px solid var(--orange); padding: 8px 12px; font-size: 12px; color: #7A4800; margin-top: 10px; font-weight: 500; }
+
+/* BUTTONS */
+.btnrow { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 5px; padding: 10px 20px; font-family: var(--font); font-size: 13px; font-weight: 600; border: 1.5px solid var(--border); background: var(--bg); color: var(--text); cursor: pointer; border-radius: 0; transition: all 150ms; }
+.btn:hover { border-color: var(--text); background: var(--bg-hover); }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.pri:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+.btn.pri:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn.ok { background: var(--green-bg) !important; border-color: var(--green) !important; color: #1A6B3A !important; }
+.btn.sm { padding: 7px 14px; font-size: 12px; }
+.btn.red { color: var(--red); border-color: rgba(192,57,43,0.3); }
+.btn.red:hover { background: rgba(192,57,43,0.05); border-color: var(--red); }
+
+/* HISTORY */
+.toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.spacer { flex: 1; }
+.hempty { text-align: center; padding: 32px; font-size: 13px; color: var(--text-faint); border: 1px dashed var(--border); }
+.hitem { border: 1px solid var(--border); padding: 12px 14px; margin-bottom: 6px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start; background: var(--bg); transition: background 150ms; }
+.hitem:hover { background: var(--bg-hover); }
+.htop { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+.hbadge { display: inline-block; padding: 2px 8px; font-size: 11px; font-weight: 700; border-radius: 2px; }
+.hsrc { font-size: 12px; color: var(--text-light); }
+.hdate { font-size: 11px; color: var(--text-faint); margin-left: auto; }
+.hurl { font-family: monospace; font-size: 11px; color: var(--text-light); word-break: break-all; line-height: 1.5; }
+.hcamp { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+.hacts { display: flex; gap: 4px; flex-shrink: 0; }
+.hbtn { width: 30px; height: 30px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-light); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; border-radius: 0; transition: all .1s; font-family: var(--font); }
+.hbtn:hover { border-color: var(--text); color: var(--text); }
+.hbtn.del:hover { border-color: var(--red); color: var(--red); }
+.hitem.duplicate { border-color: #F0BBBB; background: #FDF3F3; }
+.hitem.duplicate:hover { background: #FAE8E8; }
+.hitem.duplicate .hurl { color: var(--red); }
+.hgroup-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-light); padding: 14px 0 6px; border-bottom: 1px solid var(--border); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.hgroup-label .hgroup-count { font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--text-faint); font-size: 11px; }
+.dup-warn { display: none; align-items: center; gap: 5px; font-size: 11px; color: #8B1A1A; background: #FAE8E8; border: 1px solid #F0BBBB; padding: 6px 10px; margin-bottom: 10px; }
+.dup-warn.visible { display: flex; }
+.warn-icon { font-size: 13px; flex-shrink: 0; }
+.edit-banner { display: none; align-items: center; gap: 10px; background: #FFF8E0; border: 1px solid #D4AA00; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #7A5800; }
+.edit-banner.visible { display: flex; }
+.cancel-edit { margin-left: auto; font-size: 12px; font-weight: 700; cursor: pointer; color: #7A5800; background: none; border: 1px solid #D4AA00; font-family: var(--font); padding: 4px 10px; border-radius: 0; }
+
+/* ADMIN */
+#admin-view { display: none; }
+.admin-bar { background: #363636; color: #fff; padding: 12px 24px; margin: -32px -24px 28px; display: flex; align-items: center; gap: 10px; }
+.admin-bar h1 { font-size: 1rem; font-weight: 700; color: #fff; margin: 0; }
+.admin-badge { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; letter-spacing: 0.08em; text-transform: uppercase; }
+.admin-back { margin-left: auto; font-size: 12px; color: rgba(255,255,255,0.7); cursor: pointer; border: 1px solid rgba(255,255,255,0.3); padding: 5px 12px; background: none; font-family: var(--font); font-weight: 600; }
+.admin-back:hover { color: #fff; border-color: #fff; }
+.ch-card { border: 1px solid var(--border); margin-bottom: 8px; }
+.ch-card-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; user-select: none; background: var(--bg-hover); }
+.ch-card-head:hover { background: #ebebeb; }
+.ch-card-head .toggle { margin-left: auto; font-size: 12px; color: var(--text-faint); }
+.ch-card-body { padding: 16px 14px; display: none; border-top: 1px solid var(--border); }
+.ch-card-body.open { display: block; }
+.alabel { font-size: 10px; font-weight: 700; color: var(--text-light); letter-spacing: 0.08em; text-transform: uppercase; margin: 12px 0 6px; }
+.alabel:first-child { margin-top: 0; }
+.tag-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.atag { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; background: var(--bg-input); border: 1px solid var(--border); font-size: 12px; font-family: monospace; }
+.atag .x { cursor: pointer; color: var(--text-faint); font-size: 10px; border: none; background: none; padding: 0; line-height: 1; }
+.atag .x:hover { color: var(--red); }
+.add-row { display: flex; gap: 6px; margin-top: 8px; }
+.add-row input { flex: 1; padding: 7px 10px; font-family: var(--font); font-size: 13px; background: var(--bg-input); border: 1px solid var(--border); color: var(--text); outline: none; border-radius: 0; }
+.add-row input:focus { border-color: var(--accent); }
+.add-row button { padding: 7px 14px; font-size: 12px; font-weight: 700; font-family: var(--font); background: var(--accent); border: none; color: #fff; cursor: pointer; }
+.add-row button:hover { background: var(--accent-dark); }
+.admin-note { font-size: 11px; color: var(--text-faint); margin-top: 4px; line-height: 1.5; }
+.agroup { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); margin: 20px 0 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+.reset-bar { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+.reset-note { font-size: 12px; color: var(--text-faint); flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- ADMIN VIEW -->
+<div id="admin-view">
+  <div class="admin-bar">
+    <span class="admin-badge">Admin</span>
+    <h1>Kanal-Konfiguration</h1>
+    <button class="admin-back" id="admin-back-btn">&#8592; Zurück zum Generator</button>
+  </div>
+  <p style="font-size:13px;color:var(--text-light);margin-bottom:20px;">Hier kannst du für jeden Kanal die verfügbaren Quellen und Medium-Werte anpassen. Änderungen werden sofort gespeichert und im Generator übernommen.</p>
+  <div id="admin-channels"></div>
+  <div class="reset-bar">
+    <span class="reset-note">Alle Änderungen zurücksetzen und die Standard-Werte wiederherstellen.</span>
+    <button class="btn red sm" id="admin-reset-btn">Auf Standard zurücksetzen</button>
+  </div>
+</div>
+
+<!-- GENERATOR VIEW -->
+<div id="generator-view">
+
+<h1>UTM Link Generator</h1>
+<p class="subtitle">Links mit korrekten UTM-Parametern erstellen, speichern und exportieren.</p>
+
+<!-- KANAL -->
+<div class="sec">
+  Kanal wählen
+  <div class="iw" id="iw-kanal">
+    <button class="ibtn">i</button>
+    <div class="tip">Über welchen Kanal läuft diese Kampagne? Die Wahl bestimmt automatisch, wie der Link später in Google Analytics einsortiert wird — z.B. unter "Paid Search" oder "Email".</div>
+  </div>
+</div>
+<div class="pills" id="pills"></div>
+
+<!-- FORMULAR -->
+<div id="form-area" style="display:none">
+  <div class="edit-banner" id="edit-banner">
+    <span>&#9998; <strong>Du bearbeitest gerade einen gespeicherten Link.</strong> Nimm deine Änderungen vor und klicke auf "Speichern".</span>
+    <button class="cancel-edit" id="cancel-edit-btn">Abbrechen</button>
+  </div>
+  <div class="sec">Parameter</div>
+
+  <!-- FORM -->
+  <div class="field">
+    <div class="flabel">
+      <span id="src-label">Plattform / Quelle <span class="req">*</span></span>
+      <div class="iw"><button class="ibtn">i</button><div class="tip" id="tip-src">Auf welcher Plattform läuft die Kampagne?</div></div>
+    </div>
+    <select id="src"><option value="">— bitte wählen —</option></select>
+  </div>
+
+  <div class="field">
+    <div class="flabel">
+      <span>utm_medium <span class="req">*</span></span>
+      <div class="iw" id="iw-medium"><button class="ibtn">i</button><div class="tip" id="tip-medium">Der "Typ" des Kanals — z.B. ob es eine bezahlte Anzeige oder ein organischer Post ist. Dieser Wert entscheidet in GA4, in welche Gruppe dein Traffic einsortiert wird. Die Optionen werden automatisch nach deiner Kanal-Wahl befüllt.</div></div>
+    </div>
+    <select id="medium"></select>
+  </div>
+
+  <div class="field">
+    <div class="flabel">
+      <span>Kampagnenname <span class="req">*</span></span>
+      <div class="iw"><button class="ibtn">i</button><div class="tip">Ein Name den du dir selbst vergibst — damit du den Link später in GA4 wiederfindest. Am besten kurz und beschreibend: Was wird beworben, wann, für wen? Beispiel: sommer_sale_schuhe_2025. Keine Leerzeichen, nur Kleinbuchstaben.</div></div>
+    </div>
+    <input type="text" id="campaign" />
+    <div class="hint" id="hint-campaign">z.B. sommer_sale_2025 · Nur lowercase · Leerzeichen → Unterstriche</div>
+  </div>
+
+  <div class="g2">
+    <div class="field">
+      <div class="flabel">
+        <span>Anzeigen-Variante</span>
+        <div class="iw"><button class="ibtn">i</button><div class="tip" id="tip-content">Optional. Wenn du mehrere Versionen derselben Kampagne schaltest — z.B. zwei verschiedene Bilder oder Texte — kannst du sie hier unterscheiden. So siehst du in GA4 welche Version besser funktioniert hat. Beispiel: bild_blau oder headline_v2.</div></div>
+      </div>
+      <input type="text" id="content" />
+      <div class="hint" id="hint-content">z.B. banner_v1</div>
+    </div>
+    <div class="field" id="field-term">
+      <div class="flabel">
+        <span>Keyword (SEA)</span>
+        <div class="iw"><button class="ibtn">i</button><div class="tip">Nur für Suchanzeigen relevant. Trag hier das Keyword ein auf das du bietest — also den Suchbegriff den jemand bei Google eingetippt hat, damit deine Anzeige erscheint. Beispiel: laufschuhe_kaufen.</div></div>
+      </div>
+      <input type="text" id="term" />
+      <div class="hint">z.B. laufschuhe kaufen</div>
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="flabel">
+      <span>Ziel-URL <span class="req">*</span></span>
+      <div class="iw"><button class="ibtn">i</button><div class="tip">Die vollständige Adresse der Seite auf die jemand landet wenn er auf deinen Link klickt. Muss mit https:// beginnen. Beispiel: https://www.deineshop.de/schuhe</div></div>
+    </div>
+    <input type="text" id="url" placeholder="https://www.example.com/seite" />
+  </div>
+
+  <div class="outbox" id="out" style="display:none">
+    <div class="outlabel">Fertiger Link</div>
+    <div class="urlline" id="preview"></div>
+    <div id="vmsg"></div>
+    <div class="btnrow">
+    <button class="btn pri" id="add-btn" disabled>+ Zur Liste hinzufügen</button>
+      <button class="btn" id="copy-btn">Link kopieren</button>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="sec">
+  Link-Liste <span id="cnt" style="font-weight:400;letter-spacing:0;text-transform:none"></span>
+  <span id="dup-icon" style="display:none;color:#C0392B;font-size:14px;margin-left:2px" title="Es gibt doppelte Links">&#9888;</span>
+</div>
+<div class="dup-warn" id="dup-warn">
+  <span class="warn-icon">&#9888;</span>
+  <span id="dup-msg"></span>
+</div>
+<div class="toolbar">
+  <button class="btn sm" id="csv-btn">&#8595; CSV exportieren</button>
+  <button class="btn sm" id="xlsx-btn">&#8595; Excel exportieren</button>
+  <div class="spacer"></div>
+  <button class="btn sm red" id="clear-btn">Alle löschen</button>
+</div>
+<div id="hlist"></div>
+
+</div><!-- end generator-view -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function() {
+
+var CH = [
+
+  {group:'Bezahlte Werbung'},
+
+  {
+    key:'paid_search', label:'Paid Search', color:'#003F7A', bg:'#E0F0FA',
+    info:'Jemand sucht bei Google oder Bing und klickt auf deine bezahlte Anzeige.',
+    sourceLabel:'Suchmaschine *',
+    sourceTip:'Auf welcher Suchmaschine schaltest du die Anzeige? Fast immer "google", manchmal "bing" für Microsoft-Nutzer.',
+    medium:'cpc', mediumOptions:['cpc','ppc'],
+    mediumHint:'cpc (Cost-per-Click) und ppc (Pay-per-Click) sind zwei Namen für dasselbe — bezahlter Klick. Beide werden von GA4 als Paid Search erkannt.',
+    sources:['google','bing','yahoo','baidu','yandex'],
+    campaignHint:'z.B. brand_search_2025',
+    contentHint:'z.B. anzeigentitel_v1',
+    showTerm: true
+  },
+
+  {
+    key:'paid_social', label:'Paid Social', color:'#3D2B9E', bg:'#EEEAF8',
+    info:'Bezahlte Anzeige auf Instagram, Facebook, LinkedIn etc. — du hast Budget dafür ausgegeben.',
+    sourceLabel:'Social-Plattform *',
+    sourceTip:'Auf welcher Social-Media-Plattform läuft die bezahlte Anzeige? Wähle die Plattform aus auf der du Werbebudget ausgibst.',
+    medium:'cpc', mediumOptions:['cpc','ppc'],
+    mediumHint:'Für bezahlte Social-Anzeigen muss "cpc" oder "ppc" gesetzt sein — nur dann erkennt GA4 den Traffic als "Paid Social".',
+    sources:['instagram','facebook','meta','linkedin','tiktok','pinterest','snapchat','x'],
+    campaignHint:'z.B. awareness_sommer_2025',
+    contentHint:'z.B. video_15sek oder carousel_v2',
+    showTerm: false
+  },
+
+  {
+    key:'paid_video', label:'Paid Video', color:'#8B0057', bg:'#F8E8F2',
+    info:'Bezahlte Videoanzeige — z.B. der Clip der vor einem YouTube-Video läuft.',
+    sourceLabel:'Video-Plattform *',
+    sourceTip:'Auf welcher Plattform läuft die bezahlte Videoanzeige? Z.B. "youtube" für Pre-Roll-Ads oder "tiktok" für In-Feed-Videos.',
+    medium:'cpc', mediumOptions:['cpc','ppc'],
+    mediumHint:'Für bezahlte Videoanzeigen muss "cpc" oder "ppc" gesetzt sein — in Kombination mit der Video-Plattform als Quelle erkennt GA4 den Traffic als "Paid Video".',
+    sources:['youtube','tiktok','vimeo'],
+    campaignHint:'z.B. produktvideo_herbst_2025',
+    contentHint:'z.B. 15sek_v1 oder 30sek_v2',
+    showTerm: false
+  },
+
+  {
+    key:'paid_shopping', label:'Paid Shopping', color:'#5B1A8E', bg:'#F0E8FA',
+    info:'Bezahlte Produktanzeige in Google Shopping oder auf Vergleichsportalen.',
+    sourceLabel:'Shopping-Plattform *',
+    sourceTip:'Auf welchem Portal oder Shop läuft die bezahlte Produktanzeige? Meistens "google" für Google Shopping, oder ein Vergleichsportal wie "idealo".',
+    medium:'cpc', mediumOptions:['cpc','ppc'],
+    mediumHint:'Für Shopping-Anzeigen muss "cpc"/"ppc" gesetzt sein. Wichtig: Der Kampagnenname sollte "shop" oder "shopping" enthalten — das hilft GA4 bei der Zuordnung.',
+    sources:['google','bing','idealo','amazon','ebay'],
+    campaignHint:'Muss "shop" oder "shopping" enthalten — z.B. shopping_sommer_2025',
+    contentHint:'z.B. produktname_schuhe',
+    showTerm: false
+  },
+
+  {
+    key:'display', label:'Display', color:'#005B8E', bg:'#E0F2FB',
+    info:'Bannerwerbung auf Websites — das klassische Rechteck-Bild auf fremden Seiten.',
+    sourceLabel:'Werbenetzwerk *',
+    sourceTip:'Über welches Netzwerk wird das Banner ausgespielt? "google" für das Google Display Network, "programmatic" für automatisierte Buchungen über andere Plattformen.',
+    medium:'display', mediumOptions:['display','banner','cpm'],
+    mediumHint:'"display", "banner" und "cpm" werden von GA4 direkt als Display-Kanal erkannt. "cpm" steht für Cost-per-Mausend — also Bezahlung pro 1.000 Anzeigen.',
+    sources:['google','dv360','programmatic','adform','xandr'],
+    campaignHint:'z.B. retargeting_herbst_2025',
+    contentHint:'z.B. 300x250_v1 oder leaderboard_v2',
+    showTerm: false
+  },
+
+  {
+    key:'cross_network', label:'Cross-network', color:'#006060', bg:'#E0F5F5',
+    info:'Google-Kampagnen die automatisch auf mehreren Kanälen gleichzeitig laufen (z.B. Performance Max).',
+    sourceLabel:'Plattform *',
+    sourceTip:'Cross-network Kampagnen laufen ausschließlich über Google — hier immer "google" auswählen.',
+    medium:'cpc', mediumOptions:['cpc'],
+    mediumHint:'Für Cross-network Kampagnen "cpc" setzen. Wichtig: Der Kampagnenname muss "cross-network" enthalten — sonst ordnet GA4 den Traffic nicht korrekt zu.',
+    sources:['google'],
+    campaignHint:'Muss "cross-network" enthalten — z.B. cross-network_pmax_2025',
+    contentHint:'z.B. asset_gruppe_v1',
+    showTerm: false
+  },
+
+  {
+    key:'audio', label:'Audio', color:'#4A006B', bg:'#F3E8FA',
+    info:'Bezahlte Werbung in Podcasts oder auf Spotify.',
+    sourceLabel:'Audio-Plattform *',
+    sourceTip:'Auf welcher Plattform läuft die Audio-Werbung? Z.B. "spotify" für Spotify-Ads oder "podcast" wenn du einen bestimmten Podcast sponserst.',
+    medium:'audio', mediumOptions:['audio'],
+    mediumHint:'"audio" muss exakt so gesetzt sein — nur dann erkennt GA4 den Traffic als Audio-Kanal.',
+    sources:['spotify','podcast','deezer','amazon_music'],
+    campaignHint:'z.B. brandpodcast_q1_2025',
+    contentHint:'z.B. 30sek_spot_v1',
+    showTerm: false
+  },
+
+  {group:'Organisch (unbezahlt)'},
+
+  {
+    key:'organic_social', label:'Organic Social', color:'#1A6B3A', bg:'#E8F6EE',
+    info:'Normaler Post auf Instagram, LinkedIn etc. — kein Werbebudget, nur organische Reichweite.',
+    sourceLabel:'Social-Plattform *',
+    sourceTip:'Auf welcher Plattform wird der organische Post veröffentlicht? Wähle die Plattform auf der du postest — ohne Werbebudget.',
+    medium:'social', mediumOptions:['social','social-media','social-network'],
+    mediumHint:'"social", "social-media" und "social-network" werden alle als Organic Social erkannt. "social" ist am kürzesten und empfohlen.',
+    sources:['instagram','facebook','linkedin','tiktok','youtube','pinterest','xing','threads','x'],
+    campaignHint:'z.B. produktlaunch_april_2025',
+    contentHint:'z.B. reel_v1 oder story_v2',
+    showTerm: false
+  },
+
+  {
+    key:'organic_video', label:'Organic Video', color:'#6B3A00', bg:'#F6EEE0',
+    info:'Link in einem YouTube- oder TikTok-Video ohne bezahlte Bewerbung.',
+    sourceLabel:'Video-Plattform *',
+    sourceTip:'Auf welcher Plattform wird das organische Video veröffentlicht? Z.B. "youtube" für einen YouTube-Kanal-Link oder "tiktok" für einen Link in der Bio.',
+    medium:'video', mediumOptions:['video'],
+    mediumHint:'"video" muss im Medium stehen — in Kombination mit einer Video-Plattform als Quelle erkennt GA4 den Traffic als Organic Video.',
+    sources:['youtube','tiktok','vimeo','twitch'],
+    campaignHint:'z.B. tutorial_serie_2025',
+    contentHint:'z.B. videobeschreibung oder pinned_comment',
+    showTerm: false
+  },
+
+  {
+    key:'organic_shopping', label:'Organic Shopping', color:'#3A5B00', bg:'#EEF6E0',
+    info:'Kostenlose Produktlistung bei Google Shopping oder einem Preisvergleichsportal — kein Budget nötig.',
+    sourceLabel:'Shopping-Portal *',
+    sourceTip:'Auf welchem Portal erscheint dein Produkt kostenlos? Z.B. "google" für die kostenlosen Google Shopping Listings oder "idealo" für organische Preisvergleiche.',
+    medium:'organic', mediumOptions:['organic'],
+    mediumHint:'"organic" signalisiert GA4 dass der Traffic ohne bezahlte Werbung entstanden ist — in Kombination mit einer Shopping-Seite als Quelle wird es als Organic Shopping erkannt.',
+    sources:['amazon','ebay','idealo','google','bing'],
+    campaignHint:'z.B. freilistung_sommer_2025',
+    contentHint:'z.B. produktname_v1',
+    showTerm: false
+  },
+
+  {group:'CRM & Direkt'},
+
+  {
+    key:'email', label:'Email', color:'#7A4800', bg:'#FFF0D6',
+    info:'Link in einem Newsletter oder einer E-Mail-Kampagne.',
+    sourceLabel:'E-Mail-Tool *',
+    sourceTip:'Mit welchem Tool wird die E-Mail verschickt? Z.B. "hubspot" wenn du HubSpot nutzt, "klaviyo" für Klaviyo oder "newsletter" als allgemeine Bezeichnung.',
+    medium:'email', mediumOptions:['email'],
+    mediumHint:'"email" muss exakt so gesetzt sein — GA4 erkennt den Traffic dann automatisch als E-Mail-Kanal.',
+    sources:['newsletter','hubspot','klaviyo','mailchimp','salesforce','crm'],
+    campaignHint:'z.B. newsletter_april_2025',
+    contentHint:'z.B. cta_button oder textlink',
+    showTerm: false
+  },
+
+  {
+    key:'sms', label:'SMS', color:'#7A3300', bg:'#FFE8D6',
+    info:'Link in einer SMS-Kampagne.',
+    sourceLabel:'SMS-Tool *',
+    sourceTip:'Mit welchem Tool wird die SMS verschickt? Z.B. "klaviyo", "twilio" oder einfach "sms" als allgemeine Bezeichnung.',
+    medium:'sms', mediumOptions:['sms'],
+    mediumHint:'"sms" muss exakt so gesetzt sein — GA4 erkennt den Traffic dann als SMS-Kanal.',
+    sources:['sms','klaviyo','twilio','braze'],
+    campaignHint:'z.B. sale_reminder_2025',
+    contentHint:'z.B. link_1',
+    showTerm: false
+  },
+
+  {
+    key:'push', label:'Mobile Push', color:'#00506B', bg:'#E0F0F8',
+    info:'Link in einer Push-Benachrichtigung auf dem Smartphone.',
+    sourceLabel:'Push-Tool *',
+    sourceTip:'Mit welchem Tool wird die Push-Nachricht verschickt? Z.B. "firebase" für Google Firebase, "onesignal" für OneSignal.',
+    medium:'push', mediumOptions:['push','mobile_push','notification'],
+    mediumHint:'"push" reicht aus — GA4 erkennt alles was auf "push" endet oder "mobile" bzw. "notification" enthält als Mobile Push.',
+    sources:['firebase','onesignal','braze','airship'],
+    campaignHint:'z.B. angebot_push_2025',
+    contentHint:'z.B. ios_v1 oder android_v1',
+    showTerm: false
+  },
+
+  {group:'Partner & Sonstiges'},
+
+  {
+    key:'referral', label:'Referral', color:'#3A3A3A', bg:'#F0F0F0',
+    info:'Jemand kommt über einen Link auf einer anderen Website zu euch — z.B. ein Händler oder ein Blogartikel.',
+    sourceLabel:'Website / Partner *',
+    sourceTip:'Welche Website oder welcher Partner setzt den Link zu euch? Z.B. "haendler" für einen Händler der euch verlinkt, oder "check24" für ein Vergleichsportal.',
+    medium:'referral', mediumOptions:['referral','link','app'],
+    mediumHint:'"referral" ist der Standardwert für externe Links. "link" und "app" sind Alternativen — alle drei werden von GA4 als Referral erkannt.',
+    sources:['haendler','partner','blog','newsseite','check24','preisvergleich'],
+    campaignHint:'z.B. haendler_kooperation_2025',
+    contentHint:'z.B. startseite oder produktseite',
+    showTerm: false
+  },
+
+  {
+    key:'affiliate', label:'Affiliates', color:'#444444', bg:'#E8E8E8',
+    info:'Link über ein Partnerprogramm — der Partner bekommt eine Provision wenn jemand kauft.',
+    sourceLabel:'Affiliate-Netzwerk *',
+    sourceTip:'Über welches Affiliate-Netzwerk läuft die Partnerschaft? Z.B. "awin" für Awin oder "tradedoubler" für Tradedoubler.',
+    medium:'affiliate', mediumOptions:['affiliate'],
+    mediumHint:'"affiliate" muss exakt so gesetzt sein — GA4 erkennt den Traffic dann als Affiliates-Kanal.',
+    sources:['awin','tradedoubler','webgains','belboon','partnerize'],
+    campaignHint:'z.B. affiliate_sommer_2025',
+    contentHint:'z.B. publisher_name',
+    showTerm: false
+  },
+
+  {
+    key:'offline', label:'Offline / QR', color:'#8B1A1A', bg:'#FAE8E8',
+    info:'QR-Code auf einem Flyer, Plakat oder Messestand. Achtung: GA4 kann das nicht automatisch zuordnen.',
+    sourceLabel:'Offline-Kanal *',
+    sourceTip:'Wo wird der QR-Code oder Link eingesetzt? Z.B. "messe" für Messematerial, "print" für Flyer und Plakate, "pos" für den Point of Sale.',
+    medium:'offline', mediumOptions:['offline'],
+    mediumHint:'GA4 hat keinen Standard-Kanal für "offline" — dieser Traffic landet in "Unassigned". Empfehlung: Eine eigene Kanal-Gruppe in GA4 anlegen.',
+    warn:'GA4 kennt keinen "Offline"-Kanal — Traffic landet unter "Unassigned". Tipp: Eigene Kanal-Gruppe in GA4 anlegen.',
+    sources:['messe','print','qr','pos','flyer','katalog','event'],
+    campaignHint:'z.B. messe_muenchen_2025',
+    contentHint:'z.B. flyer_a5 oder plakat_a1',
+    showTerm: false
+  }
+
+];
+
+var active = null;
+var curURL = '';
+var links = [];
+
+try { links = JSON.parse(localStorage.getItem('utm_gen') || '[]'); } catch(e) { links = []; }
+
+function slug(v) {
+  return v.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_\-\.]/g,'');
+}
+function val(id) {
+  return document.getElementById(id).value.trim();
+}
+
+/* TOOLTIPS */
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.ibtn');
+  if (btn) {
+    e.stopPropagation();
+    var iw = btn.closest('.iw');
+    var wasOpen = iw.classList.contains('open');
+    document.querySelectorAll('.iw.open').forEach(function(el) { el.classList.remove('open'); });
+    if (!wasOpen) iw.classList.add('open');
+    return;
+  }
+  document.querySelectorAll('.iw.open').forEach(function(el) { el.classList.remove('open'); });
+});
+
+loadCfg();
+
+/* BUILD PILLS */
+function buildPills() {
+  var pillsEl = document.getElementById('pills');
+  pillsEl.innerHTML = '';
+  CH.forEach(function(ch) {
+    if (ch.group) {
+      var g = document.createElement('div');
+      g.style.cssText = 'width:100%;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#7A7A7A;margin:10px 0 6px;padding-top:10px;border-top:1px solid #E0E0E0;';
+      g.textContent = ch.group;
+      pillsEl.appendChild(g);
+      return;
+    }
+    var wrap = document.createElement('div');
+    wrap.className = 'pill-wrap';
+    var p = document.createElement('div');
+    p.className = 'pill';
+    p.id = 'pill-' + ch.key;
+    p.style.background = ch.bg;
+    p.style.color = ch.color;
+    p.style.borderColor = ch.bg;
+    p.textContent = ch.label;
+    p.addEventListener('click', function() { selectCh(ch.key); });
+    var iw = document.createElement('div');
+    iw.className = 'iw';
+    var ib = document.createElement('button');
+    ib.className = 'ibtn';
+    ib.style.borderColor = ch.color;
+    ib.style.color = ch.color;
+    ib.textContent = 'i';
+    var tip = document.createElement('div');
+    tip.className = 'tip';
+    tip.textContent = ch.info;
+    iw.appendChild(ib);
+    iw.appendChild(tip);
+    wrap.appendChild(p);
+    wrap.appendChild(iw);
+    pillsEl.appendChild(wrap);
+  });
+}
+buildPills();
+
+function selectCh(key) {
+  active = null;
+  for (var i = 0; i < CH.length; i++) {
+    if (CH[i].key === key) { active = CH[i]; break; }
+  }
+  if (!active) return;
+
+  document.querySelectorAll('.pill').forEach(function(p) {
+    p.classList.remove('active');
+    p.style.borderColor = p.style.background;
+  });
+  var pill = document.getElementById('pill-' + key);
+  pill.classList.add('active');
+  pill.style.borderColor = active.color;
+
+  document.getElementById('src-label').innerHTML = (active.sourceLabel || 'Quelle *') + ' <span class="req"></span>';
+  document.getElementById('tip-src').textContent = active.sourceTip || '';
+
+  var src = document.getElementById('src');
+  src.innerHTML = '<option value="">— bitte wählen —</option>';
+  active.sources.forEach(function(s) {
+    var o = document.createElement('option');
+    o.value = s; o.textContent = s;
+    src.appendChild(o);
+  });
+
+  var med = document.getElementById('medium');
+  med.innerHTML = '';
+  active.mediumOptions.forEach(function(m) {
+    var o = document.createElement('option');
+    o.value = m; o.textContent = m;
+    med.appendChild(o);
+  });
+
+  document.getElementById('tip-medium').textContent = active.mediumHint;
+
+  var hc = document.getElementById('hint-campaign');
+  hc.textContent = (active.campaignHint || 'z.B. kampagne_2025') + ' · Nur lowercase · Leerzeichen → Unterstriche';
+
+  var hco = document.getElementById('hint-content');
+  hco.textContent = active.contentHint || 'z.B. variante_v1';
+
+  document.getElementById('field-term').style.display = active.showTerm ? '' : 'none';
+
+  document.getElementById('form-area').style.display = 'block';
+  upd();
+}
+
+function upd() {
+  if (!active) return;
+  var src = val('src'), cam = val('campaign'), url = val('url');
+  var con = val('content'), ter = val('term');
+  var ready = src && cam && url;
+  document.getElementById('add-btn').disabled = !ready;
+  var out = document.getElementById('out');
+  if (!ready) { out.style.display = 'none'; curURL = ''; return; }
+  out.style.display = 'block';
+
+  var params = [
+    ['utm_source', slug(src)],
+    ['utm_medium', slug(val('medium'))],
+    ['utm_campaign', slug(cam)]
+  ];
+  if (ter) params.push(['utm_term', slug(ter)]);
+  if (con) params.push(['utm_content', slug(con)]);
+
+  var sep = url.indexOf('?') !== -1 ? '&' : '?';
+  curURL = url + sep + params.map(function(p) {
+    return p[0] + '=' + encodeURIComponent(p[1]);
+  }).join('&');
+
+  var cls = {utm_source:'p1', utm_medium:'p2', utm_campaign:'p3', utm_content:'p4', utm_term:'p5'};
+  var html = '<span class="base">' + url + sep + '</span>';
+  params.forEach(function(p, i) {
+    html += '<span class="' + (cls[p[0]] || '') + '">' + p[0] + '=' + encodeURIComponent(p[1]) + '</span>';
+    if (i < params.length - 1) html += '<span style="color:#AAAAAA">&amp;</span>';
+  });
+  document.getElementById('preview').innerHTML = html;
+
+  var vm = document.getElementById('vmsg');
+  if (active.warn) {
+    vm.innerHTML = '<div class="swarn">&#9888; ' + active.warn + '</div>';
+  } else {
+    vm.innerHTML = '<div class="sok">&#10003; Landet in GA4 korrekt unter <strong>' + active.label + '</strong>.</div>';
+  }
+}
+
+var editingId = null;
+
+/* INPUT EVENTS */
+['src','campaign','content','term','url'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', upd);
+  document.getElementById(id).addEventListener('change', upd);
+});
+
+function setEditMode(on) {
+  editingId = on ? editingId : null;
+  var banner = document.getElementById('edit-banner');
+  var addBtn = document.getElementById('add-btn');
+  if (on) {
+    banner.classList.add('visible');
+    addBtn.textContent = 'Speichern';
+  } else {
+    banner.classList.remove('visible');
+    addBtn.textContent = '+ Zur Liste hinzufügen';
+  }
+}
+
+document.getElementById('cancel-edit-btn').addEventListener('click', function() {
+  editingId = null;
+  setEditMode(false);
+  ['src','campaign','content','term','url'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    else el.value = '';
+  });
+  document.getElementById('medium').innerHTML = '';
+  document.getElementById('out').style.display = 'none';
+  document.querySelectorAll('.pill').forEach(function(p) {
+    p.classList.remove('active');
+    p.style.borderColor = p.style.background;
+  });
+  active = null;
+  curURL = '';
+});
+
+/* ADD / SAVE */
+document.getElementById('add-btn').addEventListener('click', function() {
+  if (!curURL || !active) return;
+  var entry = {
+    id: editingId || Date.now(),
+    channel: active.label, channelKey: active.key,
+    color: active.color, bg: active.bg,
+    source: slug(val('src')), medium: slug(val('medium')),
+    campaign: slug(val('campaign')), content: slug(val('content')), term: slug(val('term')),
+    baseUrl: val('url'), url: curURL,
+    date: new Date().toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'})
+  };
+  if (editingId) {
+    var idx = links.findIndex(function(l) { return l.id === editingId; });
+    if (idx !== -1) links[idx] = entry; else links.unshift(entry);
+  } else {
+    links.unshift(entry);
+  }
+  editingId = null;
+  setEditMode(false);
+  save(); renderList();
+  var btn = document.getElementById('add-btn');
+  btn.textContent = 'Gespeichert \u2713'; btn.classList.add('ok');
+  setTimeout(function() { btn.textContent = '+ Zur Liste hinzufügen'; btn.classList.remove('ok'); }, 1400);
+});
+
+/* COPY LINK */
+document.getElementById('copy-btn').addEventListener('click', function() {
+  if (!curURL) return;
+  navigator.clipboard.writeText(curURL).then(function() {
+    var b = document.getElementById('copy-btn');
+    b.textContent = 'Kopiert \u2713'; b.classList.add('ok');
+    setTimeout(function() { b.textContent = 'Link kopieren'; b.classList.remove('ok'); }, 1400);
+  });
+});
+
+/* CSV */
+document.getElementById('csv-btn').addEventListener('click', function() {
+  if (!links.length) { alert('Keine Links zum Exportieren.'); return; }
+  var cols = ['Kanal','Source','Medium','Kampagne','Content','Term','Base URL','UTM Link','Datum'];
+  var rows = links.map(function(l) {
+    return [l.channel, l.source, l.medium, l.campaign, l.content||'', l.term||'', l.baseUrl, l.url, l.date]
+      .map(function(x) { return '"' + (x||'').replace(/"/g, '""') + '"'; }).join(',');
+  });
+  var csv = '\uFEFF' + [cols.join(',')].concat(rows).join('\n');
+  var blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'utm-links-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+});
+
+/* EXCEL */
+document.getElementById('xlsx-btn').addEventListener('click', function() {
+  if (!links.length) { alert('Keine Links zum Exportieren.'); return; }
+  if (typeof XLSX === 'undefined') { alert('Excel-Bibliothek lädt noch, bitte kurz warten.'); return; }
+
+  var wb = XLSX.utils.book_new();
+  var today = new Date().toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'});
+
+  var groups = {};
+  var groupOrder = [];
+  links.forEach(function(l) {
+    if (!groups[l.channel]) { groups[l.channel] = []; groupOrder.push(l.channel); }
+    groups[l.channel].push(l);
+  });
+
+  /* ── Sheet: Alle Links ── */
+  var allRows = [
+    ['UTM Link Generator — Export vom ' + today],
+    ['Gesamt: ' + links.length + ' Links | ' + groupOrder.length + ' Kanal' + (groupOrder.length !== 1 ? 'e' : '')],
+    [],
+    ['Kanal', 'Source (utm_source)', 'Medium (utm_medium)', 'Kampagne (utm_campaign)', 'Variante (utm_content)', 'Keyword (utm_term)', 'Ziel-URL', 'Fertiger UTM-Link', 'Erstellt am']
+  ];
+  groupOrder.forEach(function(gName) {
+    groups[gName].forEach(function(l) {
+      allRows.push([l.channel, l.source, l.medium, l.campaign, l.content||'', l.term||'', l.baseUrl, l.url, l.date]);
+    });
+    allRows.push([]);
+  });
+
+  var wsAll = XLSX.utils.aoa_to_sheet(allRows);
+  wsAll['!cols'] = [16,20,20,28,18,16,36,70,14].map(function(w) { return {wch:w}; });
+  wsAll['!rows'] = [{hpt:22},{hpt:16},{hpt:8},{hpt:18}];
+  XLSX.utils.book_append_sheet(wb, wsAll, 'Alle Links');
+
+  /* ── Sheet pro Kanal ── */
+  if (groupOrder.length > 1) {
+    groupOrder.forEach(function(gName) {
+      var items = groups[gName];
+      var chRows = [
+        [gName + ' — ' + items.length + ' Link' + (items.length !== 1 ? 's' : '')],
+        ['Export vom ' + today],
+        [],
+        ['Source (utm_source)', 'Medium (utm_medium)', 'Kampagne (utm_campaign)', 'Variante (utm_content)', 'Keyword (utm_term)', 'Ziel-URL', 'Fertiger UTM-Link', 'Erstellt am']
+      ];
+      items.forEach(function(l) {
+        chRows.push([l.source, l.medium, l.campaign, l.content||'', l.term||'', l.baseUrl, l.url, l.date]);
+      });
+      var wsCh = XLSX.utils.aoa_to_sheet(chRows);
+      wsCh['!cols'] = [20,20,28,18,16,36,70,14].map(function(w) { return {wch:w}; });
+      wsCh['!rows'] = [{hpt:20},{hpt:14},{hpt:8},{hpt:18}];
+      var safeName = gName.replace(/[\[\]\*\/\\\?:]/g,'').slice(0,31);
+      XLSX.utils.book_append_sheet(wb, wsCh, safeName);
+    });
+  }
+
+  XLSX.writeFile(wb, 'utm-links-' + new Date().toISOString().slice(0,10) + '.xlsx');
+});
+
+/* CLEAR ALL */
+document.getElementById('clear-btn').addEventListener('click', function() {
+  if (!links.length) return;
+  links = []; editingId = null; setEditMode(false); save(); renderList();
+});
+
+/* HISTORY ACTIONS via event delegation */
+document.getElementById('hlist').addEventListener('click', function(e) {
+  var btn = e.target.closest('.hbtn');
+  if (!btn) return;
+  var id = parseInt(btn.dataset.id, 10);
+
+  if (btn.classList.contains('cp')) {
+    var item = links.find(function(l) { return l.id === id; });
+    if (item) navigator.clipboard.writeText(item.url).then(function() {
+      btn.textContent = '\u2713';
+      setTimeout(function() { btn.textContent = '\u29c9'; }, 1200);
+    });
+
+  } else if (btn.classList.contains('ed')) {
+    var item = links.find(function(l) { return l.id === id; });
+    if (item) {
+      editingId = id;
+      selectCh(item.channelKey);
+      setTimeout(function() {
+        document.getElementById('src').value = item.source;
+        var medSel = document.getElementById('medium');
+        for (var i = 0; i < medSel.options.length; i++) {
+          if (medSel.options[i].value === item.medium) { medSel.selectedIndex = i; break; }
+        }
+        document.getElementById('campaign').value = item.campaign;
+        document.getElementById('content').value = item.content || '';
+        document.getElementById('term').value = item.term || '';
+        document.getElementById('url').value = item.baseUrl;
+        upd();
+        setEditMode(true);
+        window.scrollTo({top: 0, behavior: 'smooth'});
+      }, 50);
+    }
+
+  } else if (btn.classList.contains('del')) {
+    links = links.filter(function(l) { return l.id !== id; });
+    if (editingId === id) { editingId = null; setEditMode(false); }
+    save(); renderList();
+  }
+});
+
+function save() {
+  try { localStorage.setItem('utm_gen', JSON.stringify(links)); } catch(e) {}
+}
+
+function renderList() {
+  var el = document.getElementById('hlist');
+  var cnt = document.getElementById('cnt');
+  var dupIcon = document.getElementById('dup-icon');
+  var dupWarn = document.getElementById('dup-warn');
+  var dupMsg = document.getElementById('dup-msg');
+
+  cnt.textContent = links.length ? '(' + links.length + ')' : '';
+
+  if (!links.length) {
+    el.innerHTML = '<div class="hempty">Noch keine Links gespeichert — erstelle deinen ersten Link oben.</div>';
+    dupIcon.style.display = 'none';
+    dupWarn.classList.remove('visible');
+    return;
+  }
+
+  var urlCounts = {};
+  links.forEach(function(l) { urlCounts[l.url] = (urlCounts[l.url] || 0) + 1; });
+  var totalDupLinks = 0;
+  links.forEach(function(l) { if (urlCounts[l.url] > 1) totalDupLinks++; });
+  var hasDups = totalDupLinks > 0;
+
+  if (hasDups) {
+    dupIcon.style.display = 'inline';
+    dupWarn.classList.add('visible');
+    dupMsg.textContent = totalDupLinks + ' Links in deiner Liste sind identisch — bitte prüfen und Duplikate löschen.';
+  } else {
+    dupIcon.style.display = 'none';
+    dupWarn.classList.remove('visible');
+  }
+
+  var groups = {};
+  var groupOrder = [];
+  links.forEach(function(item) {
+    var g = item.channel;
+    if (!groups[g]) { groups[g] = []; groupOrder.push(g); }
+    groups[g].push(item);
+  });
+
+  var html = '';
+  var multipleGroups = groupOrder.length > 1;
+
+  groupOrder.forEach(function(gName) {
+    var items = groups[gName];
+    var firstItem = items[0];
+
+    if (multipleGroups) {
+      html += '<div class="hgroup-label">' +
+        '<span class="hbadge" style="background:' + firstItem.bg + ';color:' + firstItem.color + '">' + gName + '</span>' +
+        '<span class="hgroup-count">' + items.length + ' Link' + (items.length !== 1 ? 's' : '') + '</span>' +
+      '</div>';
+    }
+
+    items.forEach(function(item) {
+      var isDup = urlCounts[item.url] > 1;
+      html += '<div class="hitem' + (isDup ? ' duplicate' : '') + '">' +
+        '<div>' +
+          '<div class="htop">' +
+            (!multipleGroups ? '<span class="hbadge" style="background:' + item.bg + ';color:' + item.color + '">' + item.channel + '</span>' : '') +
+            '<span class="hsrc">' + item.source + ' / ' + item.medium + '</span>' +
+            (isDup ? '<span style="font-size:11px;color:#C0392B;font-weight:600">&#9888; Doppelt</span>' : '') +
+            '<span class="hdate">' + item.date + '</span>' +
+          '</div>' +
+          '<div class="hurl">' + item.url + '</div>' +
+          '<div class="hcamp">Kampagne: ' + item.campaign + '</div>' +
+        '</div>' +
+        '<div class="hacts">' +
+          '<button class="hbtn cp" data-id="' + item.id + '" title="Kopieren">&#10697;</button>' +
+          '<button class="hbtn ed" data-id="' + item.id + '" title="Bearbeiten">&#9998;</button>' +
+          '<button class="hbtn del" data-id="' + item.id + '" title="Löschen">&#10005;</button>' +
+        '</div>' +
+      '</div>';
+    });
+  });
+
+  el.innerHTML = html;
+}
+
+renderList();
+
+/* ── ADMIN ───────────────────────────────────────────── */
+
+var STORAGE_KEY_CFG = 'utm_gen_cfg';
+
+function loadCfg() {
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY_CFG);
+    if (saved) {
+      var cfg = JSON.parse(saved);
+      CH.forEach(function(ch) {
+        if (!ch.key) return;
+        if (cfg[ch.key]) {
+          if (cfg[ch.key].sources) ch.sources = cfg[ch.key].sources;
+          if (cfg[ch.key].mediumOptions) ch.mediumOptions = cfg[ch.key].mediumOptions;
+        }
+      });
+    }
+  } catch(e) {}
+}
+
+function saveCfg() {
+  var cfg = {};
+  CH.forEach(function(ch) {
+    if (!ch.key) return;
+    cfg[ch.key] = { sources: ch.sources, mediumOptions: ch.mediumOptions };
+  });
+  try { localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(cfg)); } catch(e) {}
+}
+
+function renderAdmin() {
+  var el = document.getElementById('admin-channels');
+  var html = '';
+  var currentGroup = '';
+  CH.forEach(function(ch, idx) {
+    if (ch.group) {
+      html += '<div class="agroup">' + ch.group + '</div>';
+      currentGroup = ch.group;
+      return;
+    }
+    html += '<div class="ch-card">' +
+      '<div class="ch-card-head" data-idx="' + idx + '">' +
+        '<span style="display:inline-block;padding:3px 8px;font-size:11px;font-weight:700;border-radius:2px;background:' + ch.bg + ';color:' + ch.color + '">' + ch.label + '</span>' +
+        '<span style="font-size:12px;color:var(--text-light)">' + ch.info + '</span>' +
+        '<span class="toggle">&#9660;</span>' +
+      '</div>' +
+      '<div class="ch-card-body" id="body-' + idx + '">' +
+
+        '<div class="alabel">Quellen (utm_source)</div>' +
+        '<div class="tag-list" id="src-tags-' + idx + '">' +
+          ch.sources.map(function(s) {
+            return '<span class="atag">' + s + '<button class="x" data-idx="' + idx + '" data-type="src" data-val="' + s + '">&#10005;</button></span>';
+          }).join('') +
+        '</div>' +
+        '<div class="add-row">' +
+          '<input type="text" id="src-input-' + idx + '" placeholder="Neue Quelle hinzufügen..." />' +
+          '<button data-idx="' + idx + '" data-type="src">+ Hinzufügen</button>' +
+        '</div>' +
+        '<div class="admin-note">Alle Werte die im Dropdown "' + (ch.sourceLabel || 'Quelle') + '" erscheinen sollen.</div>' +
+
+        '<div class="alabel" style="margin-top:16px">Medium-Optionen (utm_medium)</div>' +
+        '<div class="tag-list" id="med-tags-' + idx + '">' +
+          ch.mediumOptions.map(function(m) {
+            return '<span class="atag">' + m + '<button class="x" data-idx="' + idx + '" data-type="med" data-val="' + m + '">&#10005;</button></span>';
+          }).join('') +
+        '</div>' +
+        '<div class="add-row">' +
+          '<input type="text" id="med-input-' + idx + '" placeholder="Neuen Medium-Wert hinzufügen..." />' +
+          '<button data-idx="' + idx + '" data-type="med">+ Hinzufügen</button>' +
+        '</div>' +
+        '<div class="admin-note">Achtung: Nur GA4-kompatible Werte verwenden. Falsche Werte landen in "Unassigned".</div>' +
+
+      '</div>' +
+    '</div>';
+  });
+  el.innerHTML = html;
+
+  el.addEventListener('click', function(e) {
+    var head = e.target.closest('.ch-card-head');
+    if (head) {
+      var headIdx = head.dataset.idx;
+      var body = document.getElementById('body-' + headIdx);
+      body.classList.toggle('open');
+      head.querySelector('.toggle').textContent = body.classList.contains('open') ? '\u25b2' : '\u25bc';
+      return;
+    }
+    var xbtn = e.target.closest('.x');
+    if (xbtn) {
+      var xIdx = parseInt(xbtn.dataset.idx);
+      var xType = xbtn.dataset.type;
+      var xVal = xbtn.dataset.val;
+      var xCh = CH[xIdx];
+      if (xType === 'src') xCh.sources = xCh.sources.filter(function(s) { return s !== xVal; });
+      else xCh.mediumOptions = xCh.mediumOptions.filter(function(m) { return m !== xVal; });
+      saveCfg(); renderAdmin();
+      document.getElementById('body-' + xIdx).classList.add('open');
+      document.querySelector('[data-idx="' + xIdx + '"].ch-card-head .toggle').textContent = '\u25b2';
+      return;
+    }
+    var addBtn = e.target.closest('.add-row button');
+    if (addBtn) {
+      var aIdx = parseInt(addBtn.dataset.idx);
+      var aType = addBtn.dataset.type;
+      var inputId = (aType === 'src' ? 'src-input-' : 'med-input-') + aIdx;
+      var aInput = document.getElementById(inputId);
+      var newVal = aInput.value.trim().toLowerCase().replace(/\s+/g,'_');
+      if (!newVal) return;
+      var aCh = CH[aIdx];
+      if (aType === 'src' && aCh.sources.indexOf(newVal) === -1) aCh.sources.push(newVal);
+      else if (aType === 'med' && aCh.mediumOptions.indexOf(newVal) === -1) aCh.mediumOptions.push(newVal);
+      aInput.value = '';
+      saveCfg(); renderAdmin();
+      document.getElementById('body-' + aIdx).classList.add('open');
+      document.querySelector('[data-idx="' + aIdx + '"].ch-card-head .toggle').textContent = '\u25b2';
+    }
+  });
+
+  el.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter') return;
+    var kInput = e.target.closest('.add-row input');
+    if (!kInput) return;
+    kInput.closest('.add-row').querySelector('button').click();
+  });
+}
+
+function showAdmin() {
+  document.getElementById('generator-view').style.display = 'none';
+  document.getElementById('admin-view').style.display = 'block';
+  renderAdmin();
+}
+function showGenerator() {
+  document.getElementById('admin-view').style.display = 'none';
+  document.getElementById('generator-view').style.display = 'block';
+  document.getElementById('pills').innerHTML = '';
+  buildPills();
+}
+
+document.getElementById('admin-back-btn').addEventListener('click', showGenerator);
+document.getElementById('admin-reset-btn').addEventListener('click', function() {
+  localStorage.removeItem(STORAGE_KEY_CFG);
+  location.reload();
+});
+
+if (window.location.search.indexOf('admin') !== -1) {
+  showAdmin();
+}
+
+})();
+</script>
+</body>
+</html>
