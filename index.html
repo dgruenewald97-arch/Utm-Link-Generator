@@ -374,6 +374,20 @@ var CH = [
     showTerm: false
   },
  
+ 
+  {
+    key:'paid_other', label:'Paid Other', color:'#5A4000', bg:'#FFF3D6',
+    info:'Bezahlte Werbung die nicht in eine der anderen Paid-Kategorien passt — z.B. Native Ads, Retargeting-Netzwerke oder sonstige bezahlte Kanäle.',
+    sourceLabel:'Werbenetzwerk *',
+    sourceTip:'Über welches Netzwerk läuft die Anzeige? Z.B. Retargeting-Netzwerke, Native-Advertising-Plattformen oder andere bezahlte Kanäle die nicht Search, Social, Shopping oder Video sind.',
+    medium:'cpc', mediumOptions:['cpc','ppc','retargeting','paid'],
+    mediumHint:'"cpc", "ppc", "retargeting" und "paid" werden von GA4 als Paid Other erkannt — wenn die Quelle keine bekannte Search-, Social-, Shopping- oder Video-Plattform ist.',
+    sources:['taboola','outbrain','criteo','adroll','rtbhouse','zemanta','revcontent','sharethrough','triplelift','nativo','gravity','yahoo_gemini','msn','bing_native'],
+    campaignHint:'z.B. retargeting_bestandskunden_2025',
+    contentHint:'z.B. native_v1 oder retargeting_banner',
+    showTerm: false
+  },
+ 
   {group:'Organisch (unbezahlt)'},
  
   {
